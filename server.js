@@ -61,29 +61,18 @@ const upload = multer({
 });
 
 // ── AI Model ────────────────────────────────────────────
+
+// Local AI model loading is disabled for cloud deployment (Render free plan)
 let captioner  = null;
 let modelReady = false;
-let modelError = null;
+let modelError = 'Local AI model disabled for cloud deployment (insufficient RAM).';
 
 async function loadModel() {
     console.log('\n─────────────────────────────────────────');
-    console.log('🤖  Loading Vision Nova AI model…');
-    console.log('    First run downloads ~900 MB — please wait.');
+    console.log('⚠️  Local AI model loading is DISABLED for Render free plan.');
+    console.log('    Only Gemini API will be used for image analysis.');
     console.log('─────────────────────────────────────────\n');
-    try {
-        const { pipeline } = await import('@xenova/transformers');
-        captioner = await pipeline(
-            'image-to-text',
-            'Xenova/vit-gpt2-image-captioning',
-            { cache_dir: path.join(__dirname, '.model-cache') }
-        );
-        modelReady = true;
-        console.log('✅  AI model ready!\n');
-    } catch (err) {
-        modelError = err.message;
-        console.error('❌  Model load failed:', err.message);
-        console.log('⚠️   Running without AI — fallback responses active.\n');
-    }
+    modelReady = false;
 }
 
 function summarizeTextLocal(text, fallbackCaption = '') {
@@ -368,104 +357,35 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
     const filePath = req.file.path;
     const hasAiApiKey = Boolean(process.env.GEMINI_API_KEY);
 
+    if (!hasAiApiKey) {
+        cleanupFile(filePath);
+        return res.status(500).json({
+            error: 'GEMINI_API_KEY is required for image analysis on Render free plan.',
+            description: 'Local AI model is disabled due to memory limits. Please set GEMINI_API_KEY in your environment variables.',
+            summary: 'Unable to process image. Please contact the site owner.',
+            exactText: '',
+            source: 'error'
+        });
+    }
+
     try {
         console.log(`🖼   Analysing: ${req.file.originalname}`);
         const t0 = Date.now();
 
-        // First: Try OCR to extract text directly
-        console.log('📖  Extracting text via OCR...');
-        const ocrResult = await Tesseract.recognize(filePath, 'eng', {
-            logger: (m) => {
-                if (m.progress > 0.1 && m.progress < 0.9) {
-                    console.log(`    OCR Progress: ${(m.progress * 100).toFixed(0)}%`);
-                }
-            }
-        });
-
-        const rawExtractedText = ocrResult.data.text.trim();
-        const extractedText = normalizeOcrText(rawExtractedText);
-        const ocrConfidence = Number(ocrResult?.data?.confidence || 0);
-
-        let exactText = extractedText;
-        let summary = '';
-        let source = 'local';
-
-        // Prefer Gemini for richer runtime output when key is present.
-        if (hasAiApiKey) {
-            try {
-                console.log('☁️  Sending image to AI API for exact text + summary...');
-                const gemini = await runGeminiVision(filePath, req.file.mimetype);
-                if (gemini.exactText && textQualityScore(gemini.exactText) >= textQualityScore(exactText)) {
-                    exactText = gemini.exactText;
-                }
-                if (gemini.summary) summary = gemini.summary;
-                source = 'ai';
-            } catch (geminiErr) {
-                console.warn('AI API vision failed, continuing with local pipeline:', geminiErr.message);
-            }
-        }
-
-        // Summary-first pipeline: build summary before text reconstruction.
-        if (!summary && hasAiApiKey && exactText.length > 20) {
-            try {
-                summary = await summarizeWithGemini(exactText);
-                source = 'ai';
-            } catch (sumErr) {
-                console.warn('AI API text summary failed:', sumErr.message);
-            }
-        }
-
-        if (!summary || !isReadableSummary(summary)) {
-            summary = buildReadableSummary(exactText);
-        }
-
-        // Use summary context to predict a cleaner exact text when OCR is noisy.
-        const needsReconstruction = hasAiApiKey && (!isMeaningfulText(exactText) || ocrConfidence < 60);
-        if (needsReconstruction) {
-            try {
-                console.log('🧩  Attempting AI OCR reconstruction...');
-                const reconstructed = await reconstructTextWithAi(rawExtractedText || exactText, summary);
-                const cleaned = normalizeOcrText(reconstructed);
-
-                if (isMeaningfulText(cleaned) && textQualityScore(cleaned) > textQualityScore(exactText)) {
-                    exactText = cleaned;
-                    source = 'ai';
-                }
-            } catch (reconErr) {
-                console.warn('AI OCR reconstruction failed:', reconErr.message);
-            }
-        }
-
-        // Fallback to local caption model if exact text is weak.
-        if (!summary && modelReady) {
-            console.log('🤖  Using local AI captioning fallback...');
-            const result = await captioner(filePath, { max_new_tokens: 90 });
-            const caption = (result[0]?.generated_text || '').trim();
-            if (!summary) summary = summarizeTextLocal(exactText, caption);
-            if (!exactText && caption) exactText = caption;
-            source = source || 'local';
-        }
-
-        if (source === 'local' && (!isMeaningfulText(exactText) || ocrConfidence < 45)) {
-            summary = 'Summary: The text is not clear enough to summarize reliably. Please upload a sharper, brighter, and straighter image.';
-            exactText = exactText || 'Low-confidence OCR output. Try a clearer image.';
-        }
-
-        if (!summary) summary = summarizeTextLocal(exactText);
-        if (!exactText) exactText = 'No clear text could be extracted from the image.';
-
+        // Only use Gemini API for analysis
+        console.log('☁️  Sending image to Gemini API for exact text + summary...');
+        const gemini = await runGeminiVision(filePath, req.file.mimetype);
+        const exactText = gemini.exactText || '';
+        const summary = gemini.summary || '';
         const ms = Date.now() - t0;
         cleanupFile(filePath);
 
-        console.log(`✅  Done in ${ms}ms [${source}]`);
-        // By default, only return summary and source. If client requests, include exactText for copy option.
         const response = {
-            summary,
-            source,
-            confidence: `${source.toUpperCase()} · ${ms}ms`,
-            description: summary
+            summary: summary || 'No summary generated.',
+            source: 'ai',
+            confidence: `AI · ${ms}ms`,
+            description: summary || 'No summary generated.'
         };
-        // Allow client to request exactText (e.g., for copy button)
         if (req.body && req.body.includeExactText === 'true') {
             response.exactText = exactText;
         }
@@ -473,7 +393,7 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
 
     } catch (err) {
         cleanupFile(filePath);
-        console.error('AI error:', err.message);
+        console.error('Gemini AI error:', err.message);
         return res.status(500).json({
             error:       'Image analysis failed.',
             description: 'Unable to process this image. Please try a different one.',
@@ -543,7 +463,7 @@ app.use((err, _req, res, _next) => {
         console.log('─────────────────────────────────────────');
         console.log(`    GET  /                     Home page`);
         console.log(`    GET  /api/health           Model status`);
-        console.log(`    POST /api/analyze          AI image caption`);
+        console.log(`    POST /api/analyze          AI image caption (Gemini only)`);
         console.log(`    POST /api/tts              TTS params`);
         console.log(`    POST /api/contact          Contact form`);
         console.log('─────────────────────────────────────────');
