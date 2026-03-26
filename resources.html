@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resources | Vision Nova</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-grid min-h-screen">
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+
+  <!-- Header -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--border)]">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[#00a88a] flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </div>
+        <span class="text-xl font-semibold" style="font-family: 'Space Grotesk', sans-serif;">Vision Nova</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="resources.html" class="nav-link active">Resources</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+      </nav>
+      <div class="hidden md:flex items-center gap-4">
+        <a href="index.html#image-recognition-section" class="btn-primary">Use The Tool</a>
+      </div>
+      <button class="md:hidden p-2" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+  <div class="mobile-menu">
+    <button class="absolute top-6 right-6" onclick="toggleMobileMenu()" aria-label="Close menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <nav class="flex flex-col gap-6">
+      <a href="index.html" class="text-xl font-medium">Home</a>
+      <a href="resources.html" class="text-xl font-medium text-[var(--muted)]">Resources</a>
+      <a href="contact.html" class="text-xl font-medium text-[var(--muted)]">Contact</a>
+      <a href="index.html#image-recognition-section" class="text-xl font-medium text-[var(--muted)]">Use The Tool</a>
+    </nav>
+  </div>
+
+  <main class="pt-20 relative z-10">
+    <div class="max-w-7xl mx-auto px-6 py-20 md:py-32">
+      <div class="text-center mb-16 reveal">
+        <h1 class="text-4xl md:text-6xl font-bold mb-4">Resources</h1>
+        <p class="text-[var(--muted)] text-lg max-w-2xl mx-auto">Learn more about accessibility best practices and how to implement Vision Nova</p>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="flex flex-wrap justify-center gap-2 mb-12 reveal">
+        <button class="resource-tab active px-6 py-2 rounded-full border border-[var(--border)] transition-all" data-filter="all">All</button>
+        <button class="resource-tab px-6 py-2 rounded-full border border-[var(--border)] text-[var(--muted)] transition-all" data-filter="guide">Guides</button>
+        <button class="resource-tab px-6 py-2 rounded-full border border-[var(--border)] text-[var(--muted)] transition-all" data-filter="api">API Docs</button>
+        <button class="resource-tab px-6 py-2 rounded-full border border-[var(--border)] text-[var(--muted)] transition-all" data-filter="case">Case Studies</button>
+      </div>
+
+      <!-- Resources Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" id="resources-grid">
+        <article class="resource-card reveal" data-category="guide"><div class="p-6"><span class="resource-tag bg-[var(--accent-dim)] text-[var(--accent)]">Guide</span><h3 class="text-xl font-semibold mt-4 mb-2">Getting Started with Vision Nova</h3><p class="text-[var(--muted)] mb-4">A comprehensive guide to setting up and configuring Vision Nova for your website.</p><div class="flex items-center justify-between text-sm"><span class="text-[var(--muted)]">15 min read</span><a href="#" class="text-[var(--accent)] hover:underline">Read more</a></div></div></article>
+        <article class="resource-card reveal" data-category="api" style="transition-delay: 0.1s;"><div class="p-6"><span class="resource-tag bg-blue-500/20 text-blue-400">API Docs</span><h3 class="text-xl font-semibold mt-4 mb-2">Text-to-Speech API Reference</h3><p class="text-[var(--muted)] mb-4">Complete API documentation for integrating Google Cloud Text-to-Speech.</p><div class="flex items-center justify-between text-sm"><span class="text-[var(--muted)]">Technical</span><a href="#" class="text-[var(--accent)] hover:underline">Read more</a></div></div></article>
+        <article class="resource-card reveal" data-category="case" style="transition-delay: 0.2s;"><div class="p-6"><span class="resource-tag bg-purple-500/20 text-purple-400">Case Study</span><h3 class="text-xl font-semibold mt-4 mb-2">How Netflix Improved Accessibility</h3><p class="text-[var(--muted)] mb-4">Learn how Netflix increased their accessibility score by 45%.</p><div class="flex items-center justify-between text-sm"><span class="text-[var(--muted)]">10 min read</span><a href="#" class="text-[var(--accent)] hover:underline">Read more</a></div></div></article>
+        <article class="resource-card reveal" data-category="guide" style="transition-delay: 0.3s;"><div class="p-6"><span class="resource-tag bg-[var(--accent-dim)] text-[var(--accent)]">Guide</span><h3 class="text-xl font-semibold mt-4 mb-2">WCAG 2.1 Compliance Checklist</h3><p class="text-[var(--muted)] mb-4">A practical checklist for ensuring your digital content meets standards.</p><div class="flex items-center justify-between text-sm"><span class="text-[var(--muted)]">20 min read</span><a href="#" class="text-[var(--accent)] hover:underline">Read more</a></div></div></article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-[var(--bg-elevated)] border-t border-[var(--border)] py-12 relative z-10">
+    <div class="max-w-7xl mx-auto px-6 text-center text-[var(--muted)] text-sm"><p>2025 Vision Nova. All rights reserved.</p></div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
